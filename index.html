@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>游戏评论采集助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080818;color:#e2e8f0;font-family:'Microsoft YaHei UI',sans-serif;min-height:100vh;padding:30px 20px}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-size:28px;text-align:center;margin-bottom:4px}
+h1 .g{background:linear-gradient(135deg,#22d3ee,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#6b7294;text-align:center;margin-bottom:24px;font-size:14px}
+.tabs{display:flex;gap:0;margin-bottom:0;justify-content:center}
+.tab{padding:12px 40px;font-size:15px;font-weight:bold;cursor:pointer;border:1px solid #1e1e4a;background:#0c0c22;color:#6b7294;transition:all .2s}
+.tab:first-child{border-radius:12px 0 0 0}
+.tab:last-child{border-radius:0 12px 0 0}
+.tab.active{background:#12122e;color:#22d3ee;border-bottom-color:#12122e}
+.panel{display:none;background:#12122e;border:1px solid #1e1e4a;border-top:none;border-radius:0 0 14px 14px;padding:24px 28px;margin-bottom:18px}
+.panel.active{display:block}
+.card{background:#0a0a1e;border:1px solid #1a1a3a;border-radius:10px;padding:16px 20px;margin-bottom:14px}
+.card h3{color:#22d3ee;font-size:15px;margin-bottom:10px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.row input{flex:1;min-width:160px;background:#06060f;border:1px solid #2a2a5a;border-radius:8px;padding:9px 12px;color:#67e8f9;font-size:15px;font-family:Consolas,monospace;outline:none}
+.row input:focus{border-color:#22d3ee}
+.row button{background:#164e63;color:#67e8f9;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.row button:hover{background:#155e75}
+.quick{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.quick span{background:#111128;border:1px solid #2a2a5a;border-radius:6px;padding:3px 9px;font-size:11px;color:#94a3b8;cursor:pointer;transition:all .15s}
+.quick span:hover{border-color:#22d3ee;color:#22d3ee}
+.help{color:#6b7294;font-size:11px;margin-top:4px;line-height:1.6}
+.help b{color:#94a3b8}
+.steps{margin-top:14px}
+.step{display:flex;gap:10px;margin-bottom:8px;font-size:13px;line-height:1.6}
+.sn{background:#1e3a5f;color:#67e8f9;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;flex-shrink:0}
+.step b{color:#34d399}
+.step code{background:#111128;padding:1px 5px;border-radius:3px;color:#f0abfc;font-family:Consolas,monospace;font-size:12px}
+.btn-area{text-align:center;padding:16px 0}
+.cbtn{border:none;border-radius:12px;padding:16px 48px;font-size:17px;font-weight:bold;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(34,211,238,.1)}
+.cbtn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(34,211,238,.2)}
+.cbtn-b{background:linear-gradient(135deg,#064e3b,#0e7a5e);color:#34d399}
+.cbtn-t{background:linear-gradient(135deg,#164e63,#0e7490);color:#22d3ee}
+.copied{background:linear-gradient(135deg,#14532d,#166534)!important}
+.note{background:#0f0f24;border:1px solid #1e1e4a;border-radius:10px;padding:16px 20px;font-size:12px;color:#8892b0;line-height:1.8;margin-bottom:14px}
+.note b{color:#c4b5fd}
+a{color:#67e8f9}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1><span class="g">🎮 游戏评论采集助手</span></h1>
+<p class="sub">支持 B站游戏中心 + TapTap 双平台 · 一键采集全部评论</p>
+
+<!-- 平台切换 -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('bili')">🎮 B站游戏中心</div>
+  <div class="tab" onclick="switchTab('tap')">🎯 TapTap</div>
+</div>
+
+<!-- B站面板 -->
+<div class="panel active" id="panel-bili">
+<div class="card">
+  <h3>🔗 打开B站游戏页面</h3>
+  <div class="row">
+    <input id="biliId" type="text" value="114605" placeholder="B站游戏ID">
+    <button onclick="window.open('https://www.biligame.com/detail/?id='+document.getElementById('biliId').value.trim(),'_blank')">🌐 打开</button>
+  </div>
+  <p class="help"><b>获取ID：</b>biligame.com/detail/?id=<b style="color:#22d3ee">114605</b> ← 地址栏中的数字</p>
+  <div class="quick" id="biliQuick"></div>
+</div>
+<div class="steps">
+  <div class="step"><div class="sn">1</div><div>上方输入ID → 点<b>「🌐 打开」</b>（确保已登录B站）</div></div>
+  <div class="step"><div class="sn">2</div><div>在游戏页面点<b>「评论」</b>标签加载评论</div></div>
+  <div class="step"><div class="sn">3</div><div>按<code>F12</code> → <code>Console</code>，粘贴代码回车</div></div>
+  <div class="step"><div class="sn">4</div><div>右下角控制面板 → 设置页码 → 点<b>「▶ 开始」</b></div></div>
+</div>
+<div class="btn-area">
+  <button class="cbtn cbtn-b" onclick="copyScript('bili',this)">📋 复制B站爬虫代码</button>
+</div>
+</div>
+
+<!-- TapTap面板 -->
+<div class="panel" id="panel-tap">
+<div class="card">
+  <h3>🔗 打开TapTap游戏评论页</h3>
+  <div class="row">
+    <input id="tapId" type="text" placeholder="TapTap游戏ID，如 168332">
+    <button onclick="window.open('https://www.taptap.cn/app/'+document.getElementById('tapId').value.trim()+'/review','_blank')">🌐 打开</button>
+  </div>
+  <p class="help"><b>获取ID：</b>taptap.cn/app/<b style="color:#06b6d4">168332</b>/review ← 地址栏中的数字或字母</p>
+  <div class="quick" id="tapQuick"></div>
+</div>
+<div class="steps">
+  <div class="step"><div class="sn">1</div><div>上方输入ID → 点<b>「🌐 打开」</b></div></div>
+  <div class="step"><div class="sn">2</div><div>按<code>F12</code> → <code>Console</code>，粘贴代码回车</div></div>
+  <div class="step"><div class="sn">3</div><div>控制面板出现 → 直接点<b>「▶ 开始」</b>（自动点最新+滚动）</div></div>
+  <div class="step"><div class="sn">4</div><div>完成后点<b>「💾 保存CSV」</b>下载</div></div>
+</div>
+<div class="btn-area">
+  <button class="cbtn cbtn-t" onclick="copyScript('tap',this)">📋 复制TapTap爬虫代码</button>
+</div>
+</div>
+
+<div class="note">
+  <b>✨ 功能特性：</b><br>
+  • 双平台支持：<b>B站游戏中心</b> + <b>TapTap</b><br>
+  • 无数量限制，可爬取<b>全部评论</b><br>
+  • 自动提取：⭐评分、用户名、评论内容、时间、设备、点赞数等<br>
+  • 可控制页码范围/滚动轮数，随时停止<br>
+  • 导出CSV / JSON，Excel直接打开<br>
+  • B站含子评论，TapTap只抓主评论
+</div>
+
+</div>
+
+<script>
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.querySelector('.tab:nth-child('+(t==='bili'?'1':'2')+')').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+const BILI_SCRIPT = `
+(function(){
+/* ========== 防止重复注入 ========== */
+if(window.__crawler_injected){alert('爬虫已在运行中！如需重新启动请刷新页面');return}
+window.__crawler_injected=true;
+
+/* ========== 全局状态 ========== */
+let allComments=[];
+let running=false;
+let stopped=false;
+const ids=new Set();
+
+/* ========== 注入控制面板UI ========== */
+const panel=document.createElement('div');
+panel.innerHTML=\`
+<div id="__cp" style="position:fixed;bottom:20px;right:20px;width:380px;background:#0f0f23;border:1px solid #2a2a5a;border-radius:14px;padding:16px;z-index:999999;font-family:'Microsoft YaHei UI',sans-serif;color:#e2e8f0;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="color:#22d3ee;font-size:16px;font-weight:bold">🎮 评论爬虫</span>
+    <span id="__st" style="color:#6b7294;font-size:12px">就绪</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="flex:1">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:3px">起始页</div>
+      <input id="__from" type="number" value="1" min="1" style="width:100%;background:#1a1a35;border:1px solid #2e2e5a;border-radius:6px;padding:6px 10px;color:#67e8f9;font-size:14px;outline:none">
+    </div>
+    <div style="flex:1">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:3px">结束页</div>
+      <input id="__to" type="number" value="999" min="1" style="width:100%;background:#1a1a35;border:1px solid #2e2e5a;border-radius:6px;padding:6px 10px;color:#67e8f9;font-size:14px;outline:none">
+    </div>
+    <div style="flex:1">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:3px">间隔(ms)</div>
+      <input id="__delay" type="number" value="1000" min="300" style="width:100%;background:#1a1a35;border:1px solid #2e2e5a;border-radius:6px;padding:6px 10px;color:#67e8f9;font-size:14px;outline:none">
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button id="__go" style="flex:1;background:#064e3b;color:#34d399;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer">▶ 开始</button>
+    <button id="__stop" style="flex:1;background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer;display:none">⏹ 停止</button>
+    <button id="__csv" style="flex:1;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer">💾 保存CSV</button>
+    <button id="__json" style="background:#2e1065;color:#c4b5fd;border:none;border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer">JSON</button>
+  </div>
+  <div id="__log" style="background:#06060e;border-radius:8px;padding:10px;height:180px;overflow-y:auto;font-family:Consolas,monospace;font-size:11px;line-height:1.6"></div>
+  <div style="text-align:right;margin-top:6px">
+    <span style="color:#3f3f6f;font-size:10px;cursor:pointer" onclick="document.getElementById('__cp').style.display='none'">收起面板</span>
+  </div>
+</div>
+\`;
+document.body.appendChild(panel);
+
+const $=id=>document.getElementById(id);
+const addLog=(msg,color='#94a3b8')=>{
+  const el=$('__log');
+  const t=new Date().toLocaleTimeString();
+  el.innerHTML+=\`<div style="color:\${color}">\${t} \${msg}</div>\`;
+  el.scrollTop=el.scrollHeight;
+};
+
+/* ========== 拦截页面请求 ========== */
+addLog('✅ 拦截器安装中...','#34d399');
+
+let rawFirstItem=null;
+
+const origXHROpen=XMLHttpRequest.prototype.open;
+const origXHRSend=XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.open=function(m,u,...a){this._url=u;return origXHROpen.call(this,m,u,...a)};
+XMLHttpRequest.prototype.send=function(...a){
+  this.addEventListener('load',function(){
+    try{
+      if(this._url&&hasKeyword(this._url)){
+        processResponse(JSON.parse(this.responseText));
+      }
+    }catch(e){}
+  });
+  return origXHRSend.apply(this,a);
+};
+
+const origFetch=window.fetch;
+window.fetch=async function(u,...a){
+  const resp=await origFetch.call(this,u,...a);
+  try{
+    const url=typeof u==='string'?u:(u instanceof Request?u.url:'');
+    if(url&&hasKeyword(url)){
+      const cl=resp.clone();
+      processResponse(await cl.json());
+    }
+  }catch(e){}
+  return resp;
+};
+
+function hasKeyword(url){
+  return /comment|reply|review/i.test(url) && !/report|config|count/i.test(url);
+}
+
+function processResponse(data){
+  const comments=extractAll(data);
+  if(comments.length===0)return;
+
+  // 打印首条原始数据帮助调试
+  if(!rawFirstItem){
+    rawFirstItem=true;
+    const inner=data?.data||data;
+    let list=findList(inner);
+    if(list&&list[0]){
+      addLog('📋 首条原始数据（全部字段）:','#c084fc');
+      console.log('%c[爬虫] 首条API原始数据：','color:#c084fc;font-weight:bold;font-size:13px');
+      console.log(JSON.parse(JSON.stringify(list[0])));
+    }
+  }
+
+  let added=0;
+  comments.forEach(c=>{
+    if(!ids.has(c._key)){
+      ids.add(c._key);
+      allComments.push(c);
+      added++;
+    }
+  });
+  if(added>0){
+    addLog(\`📥 +\${added}条 | 累计: \${allComments.length}条\`,'#34d399');
+    $('__st').textContent=\`\${allComments.length}条\`;
+    $('__st').style.color='#34d399';
+  }
+}
+
+addLog('✅ 拦截器就绪','#34d399');
+addLog('请先在页面上点「评论」加载评论','#fbbf24');
+addLog('然后点面板上的「▶ 开始」按钮');
+
+/* ========== 按钮事件 ========== */
+$('__go').onclick=async function(){
+  if(running)return;
+  running=true;
+  stopped=false;
+  $('__go').style.display='none';
+  $('__stop').style.display='';
+
+  const fromPage=parseInt($('__from').value)||1;
+  const toPage=parseInt($('__to').value)||999;
+  const delay=Math.max(300,parseInt($('__delay').value)||1000);
+
+  addLog(\`━━ 开始: 第\${fromPage}~\${toPage}页 间隔\${delay}ms ━━\`,'#22d3ee');
+
+  // 如果是第1页，先等页面自己加载的数据
+  if(fromPage===1){
+    addLog('等待第1页数据（页面自动加载）...');
+    // 点击评论tab（如果还没加载）
+    const tabs=document.querySelectorAll('[class*="tab"],[role="tab"]');
+    for(const t of tabs){if((t.innerText||'').includes('评论')||(t.innerText||'').includes('评价')){t.click();break}}
+    await sleep(2000);
+  }
+
+  let fails=0;
+  let currentPage=fromPage;
+
+  // 如果需要从非第1页开始，先翻到那一页
+  if(fromPage>1){
+    addLog(\`正在翻到第\${fromPage}页...\`);
+    // 尝试直接点页码
+    let jumped=false;
+    const pageNums=document.querySelectorAll('[class*="page"] *,  [class*="pagination"] *');
+    for(const el of pageNums){
+      if((el.innerText||'').trim()===String(fromPage)&&el.offsetParent!==null){
+        el.click();
+        await sleep(2000);
+        jumped=true;
+        break;
+      }
+    }
+    if(!jumped){
+      // 逐页翻到目标页
+      for(let p=1;p<fromPage&&!stopped;p++){
+        const btn=findNextBtn();
+        if(!btn)break;
+        btn.click();
+        await sleep(Math.min(delay,500));
+      }
+    }
+    currentPage=fromPage;
+  }
+
+  // 逐页翻
+  for(let pg=currentPage;pg<=toPage&&!stopped;pg++){
+    const beforeCount=allComments.length;
+
+    if(pg>fromPage||(fromPage===1&&pg>1)){
+      const btn=findNextBtn();
+      if(!btn){
+        await sleep(1500);
+        const btn2=findNextBtn();
+        if(!btn2){
+          addLog('没有下一页了，完成','#34d399');
+          break;
+        }
+        btn2.click();
+      }else{
+        btn.click();
+      }
+      await sleep(delay);
+    }else{
+      await sleep(1000);
+    }
+
+    // 检查是否有新数据
+    if(allComments.length===beforeCount){
+      fails++;
+      if(fails>=3){
+        addLog(\`连续\${fails}页无新数据，停止\`,'#fbbf24');
+        break;
+      }
+    }else{
+      fails=0;
+    }
+
+    if(pg%50===0){
+      addLog(\`📄 第\${pg}页 | \${allComments.length}条\`,'#22d3ee');
+    }
+  }
+
+  addLog(\`━━ 完成！共 \${allComments.length} 条 ━━\`,'#34d399');
+  $('__st').textContent=\`✔ \${allComments.length}条\`;
+  running=false;
+  $('__go').style.display='';
+  $('__stop').style.display='none';
+};
+
+$('__stop').onclick=function(){
+  stopped=true;
+  addLog('⏹ 正在停止...','#fbbf24');
+};
+
+$('__csv').onclick=function(){
+  if(allComments.length===0){addLog('暂无数据','#f87171');return}
+  dlCSV();
+  addLog(\`📥 CSV已下载（\${allComments.length}条）\`,'#34d399');
+};
+
+$('__json').onclick=function(){
+  if(allComments.length===0){addLog('暂无数据','#f87171');return}
+  const data=allComments.map(c=>{const r={...c};delete r._key;return r});
+  const gid=new URLSearchParams(location.search).get('id')||'game';
+  dlFile(JSON.stringify(data,null,2),\`game_\${gid}_评论_\${data.length}条.json\`,'application/json');
+  addLog(\`📥 JSON已下载（\${data.length}条）\`,'#34d399');
+};
+
+/* ========== 全局暴露 ========== */
+window.crawlerStop=()=>{stopped=true};
+window.crawlerSave=()=>{$('__csv').click()};
+window._comments=allComments;
+
+/* ========== 工具函数 ========== */
+function findNextBtn(){
+  const all=document.querySelectorAll('button,a,span,div,li');
+  for(const el of all){
+    const t=(el.innerText||'').trim();
+    const c=el.className||'';
+    if((t==='下一页'||t==='>'||t==='›'||t==='>>'||t==='»')
+      &&!el.disabled&&!c.includes('disabled')&&el.offsetParent!==null)return el;
+    if(c.includes('next')&&!c.includes('disabled')&&!c.includes('prev')&&el.offsetParent!==null)return el;
+  }
+  const act=document.querySelector('[class*="page"][class*="active"],[class*="page"][class*="current"],[class*="page"].on');
+  if(act){
+    let n=act.nextElementSibling;
+    if(n&&/^\\d+$/.test((n.innerText||'').trim())&&n.offsetParent!==null)return n;
+  }
+  return null;
+}
+
+function findList(inner){
+  if(!inner||typeof inner!=='object')return null;
+  if(Array.isArray(inner))return inner;
+  for(const k of['replies','list','items','comments','result','records','data','reviews','posts']){
+    if(inner[k]&&Array.isArray(inner[k])&&inner[k].length>0)return inner[k];
+  }
+  for(const k of Object.keys(inner)){
+    if(Array.isArray(inner[k])&&inner[k].length>0&&typeof inner[k][0]==='object')return inner[k];
+  }
+  return null;
+}
+
+function extractAll(data){
+  const res=[];
+  const inner=data?.data||data;
+  if(!inner||typeof inner!=='object')return res;
+  const list=findList(inner);
+  if(!list)return res;
+
+  for(const it of list){
+    if(!it||typeof it!=='object')continue;
+
+    // ===== 尽可能提取所有字段 =====
+    const key=String(it.rpid_str||it.rpid||it.review_id||it.id||it.comment_id||Math.random());
+
+    // 用户信息（多层查找）
+    const user=it.member||it.author||it.user||it.user_info||it.owner||{};
+    const uname=user.uname||user.nickname||user.nick||user.user_name||user.name||it.uname||it.nickname||it.nick||'';
+    const uid=String(user.mid||user.uid||user.user_id||it.mid||it.uid||it.user_id||'');
+    const level=(user.level_info||{}).current_level||user.level||it.level||'';
+    const sex=user.sex||user.gender||it.sex||'';
+    const avatar=user.avatar||user.face||user.head_url||it.avatar||'';
+
+    // 评论内容
+    let msg='';
+    const c=it.content||it.message||it.comment||it.text||it.body||it.review_content||it.detail||'';
+    if(typeof c==='object'&&c!==null){msg=c.message||c.text||c.content||''}
+    else if(typeof c==='string'){msg=c}
+    if(!msg||msg==='invalid request')continue;
+    if(msg.length<2)continue;
+
+    // ⭐ 评分/星级 - 广泛搜索
+    let score=it.score||it.star||it.stars||it.grade||it.rate||it.rating||
+              it.user_score||it.review_score||it.comment_score||
+              (it.score_info||{}).score||(it.score_info||{}).star||
+              (it.extra||{}).score||(it.ext||{}).score||'';
+
+    // 时间
+    const ctime=it.ctime||it.create_time||it.created_at||it.time||it.date||
+                it.publish_time||it.post_time||it.comment_time||it.review_time||'';
+    const mtime=it.mtime||it.modify_time||it.update_time||it.updated_at||
+                it.edit_time||'';
+
+    // 游戏时长
+    const playTime=it.play_time||it.game_play_time||it.game_time||it.playtime||
+                   it.play_duration||(it.extra||{}).play_time||(it.game_info||{}).play_time||'';
+
+    // 设备
+    const device=it.device||it.device_type||it.platform||it.device_name||
+                 it.os||(it.device_info||{}).device||'';
+
+    // 点赞/回复
+    const likes=it.like||it.likes||it.like_count||it.thumbs_up||it.up_count||it.agree||0;
+    const replies=it.rcount||it.reply_count||it.replies_count||it.count||it.comment_count||0;
+
+    // IP
+    const ip=((it.reply_control||{}).location||'').replace('IP属地：','')||
+             it.ip_location||it.location||(it.extra||{}).location||'';
+
+    // 标签
+    const tags=it.tags||it.tag||it.label||(it.extra||{}).tags||'';
+
+    res.push({
+      _key:key,
+      '评论ID':key,
+      '用户名':uname,
+      '用户UID':uid,
+      '用户等级':level,
+      '性别':sex,
+      '头像':avatar,
+      '评分':score,
+      '评论内容':msg,
+      '发布时间':fmtTime(ctime),
+      '修改时间':fmtTime(mtime),
+      '游戏时长':playTime,
+      '设备':device,
+      '点赞数':likes,
+      '回复数':replies,
+      'IP属地':ip,
+      '标签':typeof tags==='object'?JSON.stringify(tags):String(tags||''),
+    });
+
+    // 子评论
+    const subReplies=it.replies||it.sub_replies||it.children||[];
+    if(Array.isArray(subReplies)){
+      for(const s of subReplies){
+        if(!s||typeof s!=='object')continue;
+        const su=s.member||s.author||s.user||{};
+        const sc=s.content||s.message||'';
+        const smsg=typeof sc==='object'?(sc.message||sc.text||''):String(sc);
+        if(!smsg||smsg==='invalid request'||smsg.length<2)continue;
+        const sk=String(s.rpid_str||s.rpid||s.id||Math.random());
+        res.push({
+          _key:sk,
+          '评论ID':sk,
+          '用户名':su.uname||su.nickname||su.name||'',
+          '用户UID':String(su.mid||su.uid||''),
+          '用户等级':(su.level_info||{}).current_level||'',
+          '性别':su.sex||'',
+          '头像':su.avatar||su.face||'',
+          '评分':'',
+          '评论内容':smsg,
+          '发布时间':fmtTime(s.ctime||s.create_time||''),
+          '修改时间':'',
+          '游戏时长':'',
+          '设备':'',
+          '点赞数':s.like||s.likes||0,
+          '回复数':s.rcount||0,
+          'IP属地':((s.reply_control||{}).location||'').replace('IP属地：','')||'',
+          '标签':'',
+        });
+      }
+    }
+  }
+  return res;
+}
+
+function fmtTime(ts){
+  if(!ts||ts===''||ts==='0'||ts===0)return'';
+  if(typeof ts==='string'&&ts.includes('-'))return ts;
+  try{
+    let n=Number(ts);
+    if(isNaN(n))return String(ts);
+    if(n>1e12)n=Math.floor(n/1000);
+    const d=new Date(n*1000);
+    if(isNaN(d.getTime()))return String(ts);
+    return d.getFullYear()+'-'+Z(d.getMonth()+1)+'-'+Z(d.getDate())+' '+Z(d.getHours())+':'+Z(d.getMinutes())+':'+Z(d.getSeconds());
+  }catch(e){return String(ts)}
+}
+function Z(n){return String(n).padStart(2,'0')}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function dlCSV(){
+  const data=allComments.map(c=>{const r={...c};delete r._key;return r});
+  if(!data.length)return;
+  const headers=Object.keys(data[0]);
+  // 去掉全空的列
+  const nonEmpty=headers.filter(h=>data.some(r=>r[h]!==''&&r[h]!==0&&r[h]!==null&&r[h]!==undefined));
+  const rows=[nonEmpty.join(',')];
+  for(const r of data){
+    rows.push(nonEmpty.map(h=>{
+      let v=r[h]==null?'':String(r[h]);
+      v=v.replace(/"/g,'""');
+      if(/[,"\\n\\r]/.test(v))v='"'+v+'"';
+      return v;
+    }).join(','));
+  }
+  const gid=new URLSearchParams(location.search).get('id')||'game';
+  dlFile('\\uFEFF'+rows.join('\\r\\n'),\`game_\${gid}_评论_\${data.length}条.csv\`,'text/csv;charset=utf-8;');
+}
+
+function dlFile(content,name,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+})();
+
+`;
+
+const TAP_SCRIPT = `
+(function(){
+if(window.__tt_crawler){alert('爬虫已运行！刷新页面后重试');return}
+window.__tt_crawler=true;
+
+let allComments=[];
+let running=false;
+let stopped=false;
+const ids=new Set();
+let rawFirst=false;
+
+/* ===== 控制面板 ===== */
+const panel=document.createElement('div');
+panel.innerHTML=\`
+<div id="__tp" style="position:fixed;bottom:20px;right:20px;width:380px;background:#0f172a;border:1px solid #1e3a5f;border-radius:14px;padding:16px;z-index:999999;font-family:'Microsoft YaHei UI',sans-serif;color:#e2e8f0;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="color:#06b6d4;font-size:16px;font-weight:bold">🎯 TapTap评论爬虫</span>
+    <span id="__st" style="color:#6b7294;font-size:12px">就绪</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="flex:1"><div style="color:#94a3b8;font-size:11px;margin-bottom:3px">最大滚动轮数</div>
+      <input id="__to" type="number" value="999" min="1" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:6px;padding:6px 10px;color:#67e8f9;font-size:14px;outline:none"></div>
+    <div style="flex:1"><div style="color:#94a3b8;font-size:11px;margin-bottom:3px">间隔(ms)</div>
+      <input id="__dl" type="number" value="1500" min="500" style="width:100%;background:#0a0f1a;border:1px solid #1e3a5f;border-radius:6px;padding:6px 10px;color:#67e8f9;font-size:14px;outline:none"></div>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px">
+    <button id="__go" style="flex:1;background:#064e3b;color:#2dd4bf;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer">▶ 开始</button>
+    <button id="__stop" style="flex:1;background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer;display:none">⏹ 停止</button>
+    <button id="__csv" style="flex:1;background:#1e3a5f;color:#93c5fd;border:none;border-radius:8px;padding:9px;font-size:14px;font-weight:bold;cursor:pointer">💾 保存CSV</button>
+    <button id="__jsn" style="background:#2e1065;color:#c4b5fd;border:none;border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer">JSON</button>
+  </div>
+  <div id="__log" style="background:#020617;border-radius:8px;padding:10px;height:200px;overflow-y:auto;font-family:Consolas,monospace;font-size:11px;line-height:1.6"></div>
+  <div style="text-align:right;margin-top:6px"><span style="color:#334155;font-size:10px;cursor:pointer" onclick="document.getElementById('__tp').style.display='none'">收起</span></div>
+</div>\`;
+document.body.appendChild(panel);
+
+const $=id=>document.getElementById(id);
+const addLog=(m,c='#94a3b8')=>{const el=$('__log');el.innerHTML+=\`<div style="color:\${c}">\${new Date().toLocaleTimeString()} \${m}</div>\`;el.scrollTop=el.scrollHeight};
+
+/* ===== 拦截请求 - 捕获所有请求，检查内容 ===== */
+addLog('✅ 安装请求拦截器...','#2dd4bf');
+
+const origXO=XMLHttpRequest.prototype.open;
+const origXS=XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.open=function(m,u,...a){this._u=u;return origXO.call(this,m,u,...a)};
+XMLHttpRequest.prototype.send=function(...a){
+  this.addEventListener('load',function(){try{
+    if(this.responseText&&this.responseText.length>100){
+      const data=JSON.parse(this.responseText);
+      processJson(data,this._u);
+    }
+  }catch(e){}});
+  return origXS.apply(this,a);
+};
+const origF=window.fetch;
+window.fetch=async function(u,...a){
+  const r=await origF.call(this,u,...a);
+  try{
+    const ct=r.headers.get('content-type')||'';
+    if(ct.includes('json')||ct.includes('text')){
+      const c=r.clone();
+      const txt=await c.text();
+      if(txt.length>100){try{processJson(JSON.parse(txt),typeof u==='string'?u:'');}catch(e){}}
+    }
+  }catch(e){}
+  return r;
+};
+
+function processJson(data,url){
+  const comments=extractAll(data);
+  if(!comments.length)return;
+  /* 只有提取到3条以上才认为是评论数据（避免误判其他接口） */
+  if(comments.length<2&&!/(review|comment|rating|feedback)/i.test(url||''))return;
+
+  if(!rawFirst){rawFirst=true;
+    addLog('📋 首条原始数据:','#c084fc');
+    addLog('API: '+(url||'').substring(0,80),'#c084fc');
+    const inner=data?.data||data;
+    let list=findList(inner);
+    if(list?.[0])console.log('[TapTap爬虫] 首条原始数据:',JSON.parse(JSON.stringify(list[0])));
+  }
+  let added=0;
+  comments.forEach(c=>{if(!ids.has(c._key)){ids.add(c._key);allComments.push(c);added++}});
+  if(added>0){addLog(\`📥 +\${added}条 | 累计: \${allComments.length}条\`,'#2dd4bf');$('__st').textContent=allComments.length+'条';$('__st').style.color='#2dd4bf'}
+}
+
+addLog('✅ 拦截器就绪','#2dd4bf');
+addLog('直接点面板「▶ 开始」即可','#fbbf24');
+addLog('脚本会自动点「最新」并滚动加载');
+
+/* ===== 按钮 ===== */
+$('__go').onclick=async function(){
+  if(running)return;running=true;stopped=false;
+  $('__go').style.display='none';$('__stop').style.display='';
+  const maxRounds=parseInt($('__to').value)||999;
+  const delay=Math.max(500,parseInt($('__dl').value)||1500);
+
+  /* 自动点击「最新」标签 */
+  addLog('正在点击「最新」标签...','#fbbf24');
+  const tabs=document.querySelectorAll('span,a,div,button');
+  for(const t of tabs){
+    const txt=(t.innerText||'').trim();
+    if(txt==='最新'&&t.offsetParent!==null){t.click();addLog('✅ 已点击「最新」','#2dd4bf');break}
+  }
+
+  /* 等待评论加载 - 重试多次 */
+  let cards;
+  for(let attempt=1;attempt<=10;attempt++){
+    await sleep(2000);
+    cards=document.querySelectorAll('.review-item--in-app-tab__content,.review-item__content');
+    if(cards.length>0){
+      addLog(\`✅ 检测到 \${cards.length} 个评论卡片 (等待\${attempt*2}秒)\`,'#2dd4bf');
+      break;
+    }
+    addLog(\`等待评论加载... (\${attempt}/10)\`);
+    window.scrollTo(0,document.body.scrollHeight);
+  }
+  if(!cards||!cards.length){
+    addLog('⚠ 仍未发现评论，请手动操作：','#f87171');
+    addLog('  1. 点击页面上的「最新」标签','#f87171');
+    addLog('  2. 往下滑，确认评论已显示出来','#f87171');
+    addLog('  3. 再点「▶ 开始」','#f87171');
+    running=false;$('__go').style.display='';$('__stop').style.display='none';
+    return;
+  }
+
+  /* 清空之前可能从「综合」标签拦截到的旧数据，保证顺序从「最新」开始 */
+  if(allComments.length>0){addLog(\`清除旧数据\${allComments.length}条（切换到「最新」排序）\`,'#fbbf24')}
+  allComments=[];ids.clear();
+
+  /* 读取当前已有的评论（现在是「最新」排序） */
+  const initData=readDOM();
+  initData.forEach(c=>{if(!ids.has(c._key)){ids.add(c._key);allComments.push(c)}});
+  addLog(\`✅ 当前页面已有 \${allComments.length} 条评论\`,'#2dd4bf');
+
+  addLog(\`━━ 开始自动滚动加载 (最多\${maxRounds}轮) ━━\`,'#06b6d4');
+  addLog('正在自动向下滚动页面...');
+
+  let fails=0;
+  let lastCount=allComments.length;
+  let round=0;
+
+  for(round=1;round<=maxRounds&&!stopped;round++){
+    /* 滚动到页面底部 */
+    window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+    await sleep(300);
+
+    /* 点击"加载更多"按钮（如果有） */
+    const moreBtn=document.querySelector('[class*="load-more"],[class*="LoadMore"],[class*="more-btn"],[class*="show-more"]');
+    if(moreBtn&&moreBtn.offsetParent!==null){moreBtn.click()}
+
+    /* 也尝试点"下一页" */
+    const nextBtn=findNextBtn();
+    if(nextBtn){nextBtn.click()}
+
+    await sleep(delay);
+
+    /* DOM读取当前页面上的评论 */
+    const domData=readDOM();
+    domData.forEach(c=>{if(!ids.has(c._key)){ids.add(c._key);allComments.push(c)}});
+
+    const totalNew=allComments.length-lastCount;
+    if(totalNew>0){
+      fails=0;
+      $('__st').textContent=allComments.length+'条';$('__st').style.color='#2dd4bf';
+    }else{
+      fails++;
+      if(fails>=8){addLog('连续8轮无新数据，完成','#fbbf24');break}
+    }
+    lastCount=allComments.length;
+
+    if(round%10===0){
+      addLog(\`📄 第\${round}轮滚动 | \${allComments.length}条\`,'#06b6d4');
+    }
+  }
+
+  addLog(\`━━ 完成！\${allComments.length}条评论 (\${round}轮) ━━\`,'#2dd4bf');
+  running=false;$('__go').style.display='';$('__stop').style.display='none';
+};
+
+$('__stop').onclick=()=>{stopped=true;addLog('⏹ 停止中...','#fbbf24')};
+$('__csv').onclick=()=>{if(!allComments.length){addLog('无数据','#f87171');return}dlCSV();addLog(\`📥 CSV(\${allComments.length}条)\`,'#2dd4bf')};
+$('__jsn').onclick=()=>{if(!allComments.length){addLog('无数据','#f87171');return}
+  const d=allComments.map(c=>{const r={...c};delete r._key;return r});
+  dlFile(JSON.stringify(d,null,2),'taptap_reviews_'+d.length+'.json','application/json');
+  addLog(\`📥 JSON(\${d.length}条)\`,'#2dd4bf')};
+
+window.crawlerSave=()=>$('__csv').click();
+window._comments=allComments;
+
+/* ===== DOM读取 - 极简版 ===== */
+function readDOM(){
+  const res=[];
+  const cards=document.querySelectorAll('.review-item--in-app-tab__content,.review-item__content');
+
+  cards.forEach((card,idx)=>{try{
+    const raw=card.innerText||'';
+    if(raw.length<10)return;
+    const lines=raw.split('\\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length<2)return;
+
+    /* 首条调试输出 */
+    if(idx===0){
+      addLog('首条卡片文本行数: '+lines.length,'#c084fc');
+      console.log('[爬虫] 首条卡片全部行:', lines);
+      const hlEl=card.querySelector('.review-rate__highlight');
+      console.log('[爬虫] highlight元素:', hlEl, 'children:', hlEl?.children.length);
+    }
+
+    /* 星级：highlight的直接子元素数=亮星数 */
+    let score='';
+    const hl=card.querySelector('.review-rate__highlight');
+    if(hl){
+      const n=hl.children.length;
+      if(n>0&&n<=5)score=n;
+    }
+    /* 备选：normal区域直接子元素=总星数，highlight子元素=亮星 */
+    if(!score){
+      const rn=card.querySelector('.review-rate__normal');
+      if(rn){
+        const total=rn.children.length;
+        const hlInner=rn.querySelector('.review-rate__highlight');
+        if(hlInner)score=hlInner.children.length;
+        else if(total>0&&total<=5)score=total;
+      }
+    }
+    /* 兜底：从文本找星号 */
+    if(!score){
+      for(const l of lines){
+        const sm=l.match(/([★⭐]{1,5})/);
+        if(sm){score=(sm[1].match(/[★⭐]/g)||[]).length;break}
+      }
+    }
+
+    /* 用户名=第1行(短文本) */
+    let uname=(lines[0]&&lines[0].length<40)?lines[0]:'';
+
+    /* 日期+设备：支持 "2026/2/25 来自 XXX" 和 "修改于 X天前 来自 XXX" 和 "X小时前" */
+    let date='',device='';
+    for(const l of lines){
+      /* 标准日期 */
+      const dm=l.match(/(\\d{4}\\/\\d{1,2}\\/\\d{1,2})/);
+      if(dm){date=dm[1]}
+      /* 相对时间 */
+      if(!date){
+        const rm=l.match(/(\\d+\\s*(?:小时|分钟|天|周|月|年)前|昨天|前天|刚刚)/);
+        if(rm)date=rm[1];
+      }
+      /* "修改于"开头的也算时间行 */
+      if(!date&&/^修改于/.test(l)){
+        const rm2=l.match(/修改于\\s*(.+?)(?:\\s*来自|$)/);
+        if(rm2)date='修改于'+rm2[1].trim();
+      }
+      /* 设备 */
+      const dv=l.match(/来自\\s*(.+)/);
+      if(dv)device=dv[1].trim();
+      if(date)break;
+    }
+
+    /* 状态+时长 */
+    let status='',playTime='';
+    for(const l of lines){
+      const pm=l.match(/(玩过|期待|在玩)/);if(pm)status=pm[1];
+      const tm=l.match(/(\\d+)\\s*小时/);if(tm)playTime=tm[1]+'小时';
+      if(status)break;
+    }
+
+    /* 内容=排除元数据行和回复，取剩余文本 */
+    const skip=new Set();
+    skip.add(0);/* 用户名 */
+    let inReply=false;
+    const contentLines=[];
+    for(let i=1;i<lines.length;i++){
+      const l=lines[i];
+      if(/^\\d{4}\\//.test(l))continue;
+      if(/^来自\\s/.test(l))continue;
+      if(/^(展开|收起|修改于)/.test(l))continue;
+      if(/^(玩过|期待|在玩|★)/.test(l))continue;
+      if(/小时后评价/.test(l))continue;
+      if(/^\\d+\\s*(小时|分钟|天|周|月|年)前$/.test(l))continue;
+      if(/^(昨天|前天|刚刚)$/.test(l))continue;
+      if(/^\\d+$/.test(l))continue;
+      /* 回复检测:需要更明确的回复标志，避免误伤正常评论 */
+      if(contentLines.length>0&&(l.match(/^回复\\s*.{1,15}[：:]/)|| l.match(/^@.{1,15}[：:]/)||l.match(/^.{1,15}\\s*回复\\s*.{1,15}[：:]/))){inReply=true}
+      if(inReply)continue;
+      contentLines.push(l);
+    }
+    const content=contentLines.join('\\n');
+    if(!content||content.length<2)return;
+
+    /* 点赞 */
+    let likes='';
+    const ops=card.querySelector('.review-item__operations');
+    if(ops){const ns=ops.innerText.match(/\\d+/g);if(ns)likes=ns[ns.length-1]}
+
+    const key=uname+content.substring(0,60);
+    res.push({_key:key,'用户名':uname,'评分':score,'游戏状态':status,'游戏时长':playTime,'评论内容':content,'发布时间':date,'设备':device,'点赞数':likes});
+  }catch(e){addLog('解析错误:'+e.message,'#f87171')}});
+  return res;
+}
+
+/* ===== 数据提取 ===== */
+function findList(inner){
+  if(!inner||typeof inner!=='object')return null;
+  if(Array.isArray(inner))return inner;
+  for(const k of['list','data','items','reviews','comments','result','records','hits','posts','feedbacks']){
+    if(inner[k]&&Array.isArray(inner[k])&&inner[k].length>0)return inner[k]}
+  for(const k of Object.keys(inner)){
+    if(Array.isArray(inner[k])&&inner[k].length>0&&typeof inner[k][0]==='object')return inner[k]}
+  return null;
+}
+
+function extractAll(data){
+  const res=[];
+  const inner=data?.data||data;
+  if(!inner||typeof inner!=='object')return res;
+  const list=findList(inner);
+  if(!list)return res;
+
+  for(const it of list){
+    if(!it||typeof it!=='object')continue;
+    const key=String(it.id||it.review_id||it.comment_id||it.rid||Math.random());
+
+    /* 用户 */
+    const user=it.author||it.user||it.account||it.member||it.reviewer||{};
+    const uname=user.name||user.nickname||user.uname||user.user_name||it.author_name||it.nickname||it.uname||'';
+    const uid=String(user.id||user.uid||user.mid||user.user_id||it.author_id||it.uid||'');
+    const avatar=user.avatar||user.icon||user.face||'';
+
+    /* 内容 - TapTap常用 contents.raw_text 或 contents.text */
+    let msg='';
+    const c=it.contents||it.content||it.message||it.text||it.body||it.comment||it.review||'';
+    if(typeof c==='object'&&c!==null){
+      msg=c.raw_text||c.text||c.message||c.content||'';
+      if(!msg&&Array.isArray(c)){msg=c.map(x=>typeof x==='string'?x:(x.text||x.raw_text||'')).join('')}
+      if(!msg){/* 深层查找 */for(const v of Object.values(c)){if(typeof v==='string'&&v.length>2){msg=v;break}}}
+    }
+    else if(typeof c==='string'){msg=c}
+    /* 还可能在 moment.topic 里 */
+    if(!msg&&it.moment){const m=it.moment;msg=(m.topic||{}).summary||(m.topic||{}).title||(m.contents||{}).raw_text||''}
+    if(!msg||msg.length<2)continue;
+
+    /* 评分 - TapTap: score 通常是对象 {score:5, star:5} 或直接数字 */
+    let score=it.score;
+    if(typeof score==='object'&&score!==null){score=score.score||score.star||score.value||''}
+    if(!score)score=it.stars||it.star||it.grade||it.rate||it.rating||
+              it.vote||it.vote_score||it.review_score||'';
+    /* TapTap的rating可能也是对象 */
+    if(typeof score==='object'&&score!==null){score=score.score||score.value||score.star||''}
+    if(!score){const ri=it.rating||it.rating_info||it.score_info||{};if(typeof ri==='object')score=ri.score||ri.star||ri.value||''}
+
+    /* 时间 */
+    const ctime=it.created_time||it.created_at||it.ctime||it.create_time||
+                it.published_time||it.post_time||it.time||it.updated_time||'';
+
+    /* 其他 */
+    const likes=it.ups||it.like_count||it.likes||it.like||it.helpful_count||it.agree||it.thumbs_up||0;
+    const device=it.device||it.device_name||(it.device_info||{}).name||it.platform||it.model||'';
+    const playTime=it.play_time||it.game_play_time||it.spent||(it.play_info||{}).play_time||'';
+    const version=it.app_version||it.game_version||it.version||'';
+    const replies=it.comment_count||it.reply_count||it.comments_count||0;
+
+    res.push({
+      _key:key,
+      '评论ID':key,
+      '用户名':uname,
+      '用户UID':uid,
+      '头像':avatar,
+      '评分':score,
+      '评论内容':msg,
+      '发布时间':fmtTime(ctime),
+      '游戏时长':playTime,
+      '设备':device,
+      '游戏版本':version,
+      '点赞数':likes,
+      '回复数':replies,
+    });
+  }
+  return res;
+}
+
+function fmtTime(ts){
+  if(!ts||ts===''||ts===0)return'';
+  if(typeof ts==='string'&&(ts.includes('-')||ts.includes('/')))return ts;
+  try{let n=Number(ts);if(isNaN(n))return String(ts);
+    if(n>1e12)n=Math.floor(n/1000);
+    const d=new Date(n*1000);if(isNaN(d.getTime()))return String(ts);
+    return d.getFullYear()+'-'+Z(d.getMonth()+1)+'-'+Z(d.getDate())+' '+Z(d.getHours())+':'+Z(d.getMinutes())+':'+Z(d.getSeconds());
+  }catch(e){return String(ts)}}
+function Z(n){return String(n).padStart(2,'0')}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function findNextBtn(){
+  const all=document.querySelectorAll('button,a,span,div,li');
+  for(const el of all){
+    const t=(el.innerText||'').trim();const c=el.className||'';
+    if((t==='下一页'||t==='>'||t==='›'||t==='>>'||t==='»'||t==='Next'||t==='next')
+      &&!el.disabled&&!c.includes('disabled')&&el.offsetParent!==null)return el;
+    if(c.includes('next')&&!c.includes('disabled')&&!c.includes('prev')&&el.offsetParent!==null)return el;
+  }
+  const act=document.querySelector('[class*="page"][class*="active"],[class*="page"][class*="current"],[class*="page"].on');
+  if(act){let n=act.nextElementSibling;if(n&&/^\\d+$/.test((n.innerText||'').trim())&&n.offsetParent!==null)return n}
+  return null;
+}
+
+function dlCSV(){
+  const data=allComments.map(c=>{const r={...c};delete r._key;return r});
+  if(!data.length)return;
+  const h=Object.keys(data[0]);
+  const nonEmpty=h.filter(k=>data.some(r=>r[k]!==''&&r[k]!==0&&r[k]!==null&&r[k]!==undefined));
+  const rows=[nonEmpty.join(',')];
+  for(const r of data){rows.push(nonEmpty.map(k=>{
+    let v=r[k]==null?'':String(r[k]);v=v.replace(/"/g,'""');if(/[,"\\n\\r]/.test(v))v='"'+v+'"';return v}).join(','))}
+  const appId=location.pathname.match(/\\/app\\/([^/]+)/)?.[1]||'taptap';
+  dlFile('\\uFEFF'+rows.join('\\r\\n'),'taptap_'+appId+'_评论_'+data.length+'条.csv','text/csv;charset=utf-8;');
+}
+function dlFile(content,name,type){
+  const b=new Blob([content],{type});const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a)}
+
+})();
+
+`;
+
+function copyScript(type,btn){
+  const code = (type==='bili'?BILI_SCRIPT:TAP_SCRIPT).trim();
+  navigator.clipboard.writeText(code).then(()=>{
+    btn.textContent='✅ 已复制！去游戏页面控制台粘贴';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 复制'+(type==='bili'?'B站':'TapTap')+'爬虫代码';btn.classList.remove('copied')},3000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    btn.textContent='✅ 已复制！';setTimeout(()=>{btn.textContent='📋 复制代码'},3000);
+  });
+}
+
+// 快捷游戏
+const bGames=[{n:'夜幕之下',id:'114605'},{n:'明日方舟',id:'101772'},{n:'原神',id:'107573'},{n:'FGO',id:'100356'},{n:'碧蓝航线',id:'97952'},{n:'崩坏3',id:'94608'},{n:'绝区零',id:'110872'},{n:'鸣潮',id:'112317'}];
+const tGames=[{n:'原神',id:'168332'},{n:'崩铁',id:'199618'},{n:'绝区零',id:'225463'},{n:'明日方舟',id:'19721'},{n:'鸣潮',id:'203354'},{n:'王者荣耀',id:'13305'},{n:'光遇',id:'189656'},{n:'碧蓝航线',id:'19087'}];
+
+function fillQuick(containerId,games,inputId,urlTpl){
+  const c=document.getElementById(containerId);
+  games.forEach(g=>{
+    const s=document.createElement('span');s.textContent=g.n;s.title='ID:'+g.id;
+    s.onclick=()=>{document.getElementById(inputId).value=g.id;window.open(urlTpl.replace('{}',g.id),'_blank')};
+    c.appendChild(s);
+  });
+}
+fillQuick('biliQuick',bGames,'biliId','https://www.biligame.com/detail/?id={}');
+fillQuick('tapQuick',tGames,'tapId','https://www.taptap.cn/app/{}/review');
+</script>
+</body>
+</html>
